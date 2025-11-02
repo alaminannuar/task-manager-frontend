@@ -1,109 +1,54 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 
 export default function Home() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const navigate = useNavigate();
+
+  const textbox = {
+    padding: 5,
+    margin: 5,
+    placeItems: "center",
+  };
 
   const login = async (e) => {
     e.preventDefault();
-    try {
-      const response = await fetch("http://localhost:3000/auth/login", {
+    console.log(`Email: ${email}`);
+
+    const response = await fetch(
+      `${import.meta.env.VITE_BACKEND_URL}/auth/login`,
+      {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
-      });
-      const result = await response.json();
-      if (response.ok && result.token) {
-        localStorage.setItem("jwt", result.token);
-        navigate("/tasks");
-      } else {
-        alert(result || "Login failed!");
       }
-    } catch (err) {
-      console.log(err);
-      alert("Login error!");
-    }
+    );
+
+    const result = await response.json();
+    localStorage.setItem("jwt", result.token);
+    window.location.href = "/tasks";
   };
 
   return (
-    <div style={containerStyle}>
-      <h1 style={titleStyle}>Welcome to TaskApp 📝</h1>
-      <p style={subtitleStyle}>Organize your tasks efficiently</p>
-
-      <form onSubmit={login} style={formStyle}>
+    <div>
+      <h1>Welcome to the Task Manager App</h1>
+      <p>Please login to use the Task Manager</p>
+      <form>
         <input
           type="email"
-          value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder="Email"
-          style={inputStyle}
-          required
+          style={textbox}
         />
+        <br />
         <input
           type="password"
-          value={password}
           onChange={(e) => setPassword(e.target.value)}
           placeholder="Password"
-          style={inputStyle}
-          required
+          style={textbox}
         />
-        <button type="submit" style={buttonStyle}>
-          Login
-        </button>
+        <br />
+        <input type="submit" onClick={login} />
       </form>
     </div>
   );
 }
-
-// Styles
-const containerStyle = {
-  display: "flex",
-  flexDirection: "column",
-  alignItems: "center",
-  justifyContent: "center",
-  height: "80vh",
-  textAlign: "center",
-};
-
-const titleStyle = {
-  fontSize: 36,
-  color: "#1E90FF",
-  marginBottom: 10,
-};
-
-const subtitleStyle = {
-  fontSize: 18,
-  marginBottom: 30,
-  color: "#333",
-};
-
-const formStyle = {
-  display: "flex",
-  flexDirection: "column",
-  alignItems: "center",
-  width: "300px",
-};
-
-const inputStyle = {
-  padding: 10,
-  marginBottom: 15,
-  width: "100%",
-  borderRadius: 8,
-  border: "1px solid #ccc",
-  fontSize: 14,
-};
-
-const buttonStyle = {
-  padding: 10,
-  width: "100%",
-  borderRadius: 8,
-  border: "none",
-  backgroundColor: "#1E90FF",
-  color: "#fff",
-  fontWeight: "bold",
-  cursor: "pointer",
-  fontSize: 16,
-  transition: "0.2s all",
-};

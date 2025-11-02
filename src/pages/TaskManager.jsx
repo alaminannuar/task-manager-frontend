@@ -5,14 +5,14 @@ export default function TaskManager() {
   const [taskName, setTaskName] = useState("");
   const [taskDeadline, setTaskDeadline] = useState("");
   const [filter, setFilter] = useState("all"); // all, completed, pending
-  const [highlightTaskId, setHighlightTaskId] = useState(null); // for adding/removing animations
 
   const token = localStorage.getItem("jwt");
+  const backendURL = import.meta.env.VITE_BACKEND_URL; // use Render backend URL
 
   // Fetch tasks from backend
   const getTasks = async () => {
     try {
-      const response = await fetch("http://localhost:3000/tasks", {
+      const response = await fetch(`${backendURL}/tasks`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!response.ok) {
@@ -34,7 +34,7 @@ export default function TaskManager() {
 
   const addTaskToBackend = async (task) => {
     try {
-      const response = await fetch("http://localhost:3000/tasks", {
+      const response = await fetch(`${backendURL}/tasks`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -59,16 +59,11 @@ export default function TaskManager() {
       completed: false,
     };
 
-    // Highlight newly added task
-    setHighlightTaskId("new");
-
     setTasks((prev) => [...prev, newTask]);
 
     const createdTask = await addTaskToBackend(newTask);
     if (createdTask && createdTask._id) {
       setTasks((prev) => [...prev.filter((t) => t !== newTask), createdTask]);
-      setHighlightTaskId(createdTask._id);
-      setTimeout(() => setHighlightTaskId(null), 1000);
     }
 
     setTaskName("");
@@ -78,7 +73,7 @@ export default function TaskManager() {
   const toggleTask = async (task) => {
     const updatedTask = { ...task, completed: !task.completed };
     try {
-      await fetch(`http://localhost:3000/tasks/${task._id}`, {
+      await fetch(`${backendURL}/tasks/${task._id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -89,10 +84,6 @@ export default function TaskManager() {
       setTasks((prev) =>
         prev.map((t) => (t._id === task._id ? updatedTask : t))
       );
-
-      // temporary highlight for completed/uncompleted
-      setHighlightTaskId(task._id);
-      setTimeout(() => setHighlightTaskId(null), 500);
     } catch (error) {
       console.log("Error updating task", error);
     }
@@ -100,15 +91,11 @@ export default function TaskManager() {
 
   const removeTask = async (task) => {
     try {
-      setHighlightTaskId(task._id); // highlight before removing
-      setTimeout(() => {
-        setTasks((prev) => prev.filter((t) => t._id !== task._id));
-      }, 300);
-
-      await fetch(`http://localhost:3000/tasks/${task._id}`, {
+      await fetch(`${backendURL}/tasks/${task._id}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });
+      setTasks((prev) => prev.filter((t) => t._id !== task._id));
     } catch (error) {
       console.log("Error deleting task", error);
     }
@@ -119,45 +106,36 @@ export default function TaskManager() {
     window.location.href = "/";
   };
 
-  // Styles
-  const containerStyle = { padding: 20, maxWidth: 600, margin: "0 auto" };
   const inputStyle = {
     padding: 10,
     marginRight: 10,
-    borderRadius: 8,
+    borderRadius: 5,
     border: "1px solid #ccc",
     fontSize: 14,
-    flex: 1,
-    marginBottom: 10,
   };
+
   const buttonStyle = {
-    padding: "10px 20px",
-    borderRadius: 8,
+    padding: "8px 15px",
+    borderRadius: 5,
     border: "none",
-    backgroundColor: "#1E90FF",
-    color: "#fff",
+    backgroundColor: "#4CAF50",
+    color: "white",
     fontWeight: "bold",
     cursor: "pointer",
-    fontSize: 14,
-    marginBottom: 10,
-    transition: "all 0.2s",
   };
+
   const taskCardStyle = (task) => ({
     display: "flex",
     alignItems: "center",
     justifyContent: "space-between",
-    padding: 12,
+    padding: 10,
     marginBottom: 10,
-    borderRadius: 10,
-    backgroundColor:
-      highlightTaskId === task._id
-        ? "#d1ffd6" // highlight added/completed/deleted
-        : "#f0f8ff",
+    borderRadius: 8,
+    backgroundColor: "#f4f4f4",
     boxShadow: "0px 2px 5px rgba(0,0,0,0.1)",
-    transform: highlightTaskId === task._id ? "scale(1.02)" : "scale(1)",
-    transition: "all 0.3s ease",
     opacity: task.completed ? 0.6 : 1,
   });
+
   const titleStyle = (task) => ({
     textDecoration: task.completed ? "line-through" : "none",
     color:
@@ -166,7 +144,6 @@ export default function TaskManager() {
       !task.completed && new Date(task.deadline) < new Date()
         ? "bold"
         : "normal",
-    transition: "color 0.3s ease, text-decoration 0.3s ease",
   });
 
   const filteredTasks = tasks.filter((task) =>
@@ -178,16 +155,15 @@ export default function TaskManager() {
   );
 
   return (
-    <div style={containerStyle}>
+    <div style={{ padding: 20, maxWidth: 600, margin: "0 auto" }}>
       <div
         style={{
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
-          marginBottom: 15,
         }}
       >
-        <h2 style={{ color: "#1E90FF" }}>My Tasks</h2>
+        <h2>My Tasks</h2>
         <button
           onClick={logout}
           style={{ ...buttonStyle, backgroundColor: "#f44336" }}
@@ -196,46 +172,30 @@ export default function TaskManager() {
         </button>
       </div>
 
-      {/* Filter Buttons */}
+      {/* Task filter buttons */}
       <div style={{ marginBottom: 15 }}>
-        <button
-          onClick={() => setFilter("all")}
-          style={{
-            ...buttonStyle,
-            backgroundColor: filter === "all" ? "#1C86EE" : "#87CEFA",
-            marginRight: 5,
-          }}
-        >
+        <button onClick={() => setFilter("all")} style={{ marginRight: 5 }}>
           All
         </button>
         <button
           onClick={() => setFilter("completed")}
-          style={{
-            ...buttonStyle,
-            backgroundColor: filter === "completed" ? "#1C86EE" : "#87CEFA",
-            marginRight: 5,
-          }}
+          style={{ marginRight: 5 }}
         >
           Completed
         </button>
-        <button
-          onClick={() => setFilter("pending")}
-          style={{
-            ...buttonStyle,
-            backgroundColor: filter === "pending" ? "#1C86EE" : "#87CEFA",
-          }}
-        >
-          Pending
-        </button>
+        <button onClick={() => setFilter("pending")}>Pending</button>
       </div>
 
-      {/* Add Task Form */}
-      <form onSubmit={addTask} style={{ display: "flex", flexWrap: "wrap" }}>
+      {/* Add task form */}
+      <form
+        onSubmit={addTask}
+        style={{ marginBottom: 20, display: "flex", flexWrap: "wrap" }}
+      >
         <input
           type="text"
-          placeholder="Task title"
           value={taskName}
           onChange={(e) => setTaskName(e.target.value)}
+          placeholder="Task title"
           style={inputStyle}
           required
         />
@@ -251,7 +211,7 @@ export default function TaskManager() {
         </button>
       </form>
 
-      {/* Task List */}
+      {/* Task list */}
       {filteredTasks.length === 0 ? (
         <p>No tasks yet.</p>
       ) : (
