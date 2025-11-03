@@ -3,6 +3,11 @@ import { useState } from "react";
 export default function Home() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  // Use backend URL from .env, fallback to localhost for local testing
+  const backendURL =
+    import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
 
   const textbox = {
     padding: 8,
@@ -24,16 +29,14 @@ export default function Home() {
 
   const login = async (e) => {
     e.preventDefault();
+    setLoading(true);
 
     try {
-      const response = await fetch(
-        `${import.meta.env.VITE_BACKEND_URL}/auth/login`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, password }),
-        }
-      );
+      const response = await fetch(`${backendURL}/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
 
       if (!response.ok) {
         alert("Login failed. Check your credentials.");
@@ -46,6 +49,8 @@ export default function Home() {
     } catch (err) {
       console.error("Login error:", err);
       alert("Login error. Please try again later.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -70,8 +75,8 @@ export default function Home() {
           required
         />
         <br />
-        <button type="submit" style={buttonStyle}>
-          Login
+        <button type="submit" style={buttonStyle} disabled={loading}>
+          {loading ? "Logging in..." : "Login"}
         </button>
       </form>
     </div>
