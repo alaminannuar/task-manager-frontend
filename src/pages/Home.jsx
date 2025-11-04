@@ -45,7 +45,7 @@ export default function Home() {
 
       const result = await response.json();
       localStorage.setItem("jwt", result.token);
-      window.location.href = "/tasks";
+      window.location.href = "/#/tasks";
     } catch (err) {
       console.error("Login error:", err);
       alert("Login error. Please try again later.");
